@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Address, useAddressStore } from "@/store/useAddressStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderStore } from "@/store/useOrderStore";
 import { useEffect, useState } from "react";
 
@@ -45,11 +46,27 @@ function UserAccountPage() {
   const [formData, setFormData] = useState(initialAddressFormState);
   const { toast } = useToast();
   const { userOrders, getOrdersByUserId, isLoading } = useOrderStore();
+  const { user, isLoading: authLoading, updateProfile, fetchProfile } = useAuthStore();
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+  });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
     fetchAddresses();
     getOrdersByUserId();
-  }, [fetchAddresses, getOrdersByUserId]);
+    fetchProfile();
+  }, [fetchAddresses, getOrdersByUserId, fetchProfile]);
+
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        name: user.name || "",
+        email: user.email || "",
+      });
+    }
+  }, [user]);
 
   console.log(userOrders, "userOrders");
 
@@ -146,10 +163,120 @@ function UserAccountPage() {
           <h1 className="text-3xl font-bold">MY ACCOUNT</h1>
         </div>
         <Tabs defaultValue="orders" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="orders">Order History</TabsTrigger>
             <TabsTrigger value="addresses">Addresses</TabsTrigger>
           </TabsList>
+          <TabsContent value="profile">
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
+                {authLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {isEditingProfile ? (
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const success = await updateProfile(profileForm.name, profileForm.email);
+                          if (success) {
+                            toast({
+                              title: "Profile updated successfully",
+                            });
+                            setIsEditingProfile(false);
+                          } else {
+                            toast({
+                              title: "Failed to update profile",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input
+                            id="name"
+                            value={profileForm.name}
+                            onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                            placeholder="Enter your full name"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={profileForm.email}
+                            onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                            placeholder="Enter your email"
+                            required
+                          />
+                        </div>
+                        <div className="flex space-x-2 pt-2">
+                          <Button type="submit">Update Profile</Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setIsEditingProfile(false);
+                              setProfileForm({
+                                name: user?.name || "",
+                                email: user?.email || "",
+                              });
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <h3 className="text-lg font-medium">Personal Information</h3>
+                            <p className="text-sm text-gray-500">Update your personal details</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsEditingProfile(true)}
+                          >
+                            Edit Profile
+                          </Button>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm font-medium text-gray-500">Full Name</p>
+                              <p className="text-base">{user?.name || "Not provided"}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-500">Email</p>
+                              <p className="text-base">{user?.email}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-500">Account Type</p>
+                              <p className="text-base capitalize">{user?.role.toLowerCase()}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-500">Member Since</p>
+                              <p className="text-base">{user ? new Date(user.createdAt).toLocaleDateString() : "N/A"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
           <TabsContent value="orders">
             <Card>
               <CardContent className="p-6">

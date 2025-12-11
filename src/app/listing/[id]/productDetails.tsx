@@ -12,7 +12,6 @@ import { Review } from "@/types";
 import { getProductReviews, createReview, canUserReviewProduct } from "@/actions/review";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderStore } from "@/store/useOrderStore";
-import StarRating from "@/components/rating/StarRating";
 
 function ProductDetailsContent({ id }: { id: string }) {
   const [product, setProduct] = useState<any>(null);
@@ -370,12 +369,31 @@ function ProductDetailsContent({ id }: { id: string }) {
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium mb-1">Rating</label>
-                        <StarRating
-                          rating={reviewRating}
-                          interactive
-                          onRatingChange={setReviewRating}
-                          size={24}
-                        />
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              className="focus:outline-none"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill={star <= reviewRating ? "currentColor" : "none"}
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`lucide lucide-star ${star <= reviewRating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                              >
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       <div>
@@ -435,9 +453,27 @@ function ProductDetailsContent({ id }: { id: string }) {
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-medium text-lg">{review.title}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              <StarRating rating={review.rating} readonly size={16} />
-                              <span className="text-sm text-gray-600 ml-2">
+                            <div className="flex items-center gap-1 mt-1">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <svg
+                                    key={i}
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill={i < Math.floor(review.rating) ? "currentColor" : "none"}
+                                    stroke={i < Math.floor(review.rating) ? "currentColor" : "currentColor"}
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={`lucide lucide-star ${i < Math.floor(review.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                  >
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                  </svg>
+                                ))}
+                              </div>
+                              <span className="text-sm text-gray-600 ml-1">
                                 {review.rating}/5
                               </span>
                             </div>

@@ -22,6 +22,8 @@ type AuthStore = {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<Boolean>;
+  updateProfile: (name: string, email: string) => Promise<boolean>;
+  fetchProfile: () => Promise<boolean>;
 };
 
 const axiosInstance = axios.create({
@@ -98,6 +100,53 @@ export const useAuthStore = create<AuthStore>()(
           return true;
         } catch (e) {
           console.error(e);
+          return false;
+        }
+      },
+      updateProfile: async (name: string, email: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axiosInstance.put("/profile", {
+            name,
+            email,
+          });
+
+          if (response.data.success && response.data.user) {
+            set({ user: response.data.user, isLoading: false });
+            return true;
+          } else {
+            set({ isLoading: false, error: response.data.error || "Failed to update profile" });
+            return false;
+          }
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: axios.isAxiosError(error)
+              ? error?.response?.data?.error || "Profile update failed"
+              : "Profile update failed",
+          });
+          return false;
+        }
+      },
+      fetchProfile: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await axiosInstance.get("/profile");
+
+          if (response.data.success && response.data.user) {
+            set({ user: response.data.user, isLoading: false });
+            return true;
+          } else {
+            set({ isLoading: false, error: response.data.error || "Failed to fetch profile" });
+            return false;
+          }
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: axios.isAxiosError(error)
+              ? error?.response?.data?.error || "Failed to fetch profile"
+              : "Failed to fetch profile",
+          });
           return false;
         }
       },
