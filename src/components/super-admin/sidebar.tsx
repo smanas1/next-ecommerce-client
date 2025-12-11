@@ -12,6 +12,7 @@ import {
   Printer,
   SendToBack,
   Settings,
+  MessageSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -36,6 +37,11 @@ const menuItems = [
     name: "Orders",
     icon: SendToBack,
     href: "/super-admin/orders",
+  },
+  {
+    name: "Reviews",
+    icon: MessageSquare,
+    href: "/super-admin/reviews",
   },
   {
     name: "Coupons",

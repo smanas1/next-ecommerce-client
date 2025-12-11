@@ -185,3 +185,91 @@ export const canUserReviewProduct = async (
     };
   }
 };
+
+/**
+ * Admin: Get all reviews
+ */
+export const getAllReviews = async (): Promise<{ success: boolean; message?: string; reviews?: any[] }> => {
+  try {
+    const response = await axios.get(`${API_ROUTES.REVIEWS}`, {
+      withCredentials: true
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all reviews:', error);
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'An error occurred while fetching reviews',
+      };
+    }
+    return {
+      success: false,
+      message: 'An error occurred while fetching reviews',
+    };
+  }
+};
+
+/**
+ * Admin: Update a review
+ */
+export const adminUpdateReview = async (
+  reviewId: string,
+  rating?: number,
+  title?: string,
+  comment?: string
+): Promise<{ success: boolean; message: string; review?: any }> => {
+  try {
+    const response = await axios.put(
+      `${API_ROUTES.REVIEWS}/admin/${reviewId}`,
+      {
+        rating,
+        title,
+        comment,
+      },
+      { withCredentials: true }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error updating review:', error);
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'An error occurred while updating the review',
+      };
+    }
+    return {
+      success: false,
+      message: 'An error occurred while updating the review',
+    };
+  }
+};
+
+/**
+ * Admin: Delete a review
+ */
+export const adminDeleteReview = async (
+  reviewId: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await axios.delete(`${API_ROUTES.REVIEWS}/admin/${reviewId}`, {
+      withCredentials: true
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'An error occurred while deleting the review',
+      };
+    }
+    return {
+      success: false,
+      message: 'An error occurred while deleting the review',
+    };
+  }
+};
