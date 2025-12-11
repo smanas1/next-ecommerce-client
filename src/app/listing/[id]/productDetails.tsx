@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProductStore } from "@/store/useProductStore";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ProductDetailsSkeleton from "./productSkeleton";
 import { useCartStore } from "@/store/useCartStore";
 import { useToast } from "@/hooks/use-toast";
+import { Review } from "@/types";
+import { getProductReviews, createReview, canUserReviewProduct } from "@/actions/review";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useOrderStore } from "@/store/useOrderStore";
+import StarRating from "@/components/rating/StarRating";
 
 function ProductDetailsContent({ id }: { id: string }) {
   const [product, setProduct] = useState<any>(null);
@@ -19,19 +24,89 @@ function ProductDetailsContent({ id }: { id: string }) {
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+
+  // Review form state
+  const [canReview, setCanReview] = useState(false);
+  const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(true);
+  const [reviewFormOpen, setReviewFormOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const { user } = useAuthStore();
+  const { getOrdersByUserId, userOrders } = useOrderStore();
 
   useEffect(() => {
     const fetchProduct = async () => {
+      // Fetch product
       const productDetails = await getProductById(id);
       if (productDetails) {
         setProduct(productDetails);
       } else {
         router.push("/404");
+        return;
       }
     };
 
     fetchProduct();
   }, [id, getProductById, router]);
+
+  // Separate effect for fetching reviews to avoid dependency issues
+  useEffect(() => {
+    if (product?.id) {
+      const fetchReviews = async () => {
+        setReviewsLoading(true);
+        try {
+          const reviewsResult = await getProductReviews(product.id);
+          if (reviewsResult.success && reviewsResult.reviews) {
+            setReviews(reviewsResult.reviews);
+          } else {
+            console.error("Failed to fetch reviews:", reviewsResult.message);
+            setReviews([]);
+          }
+        } catch (error) {
+          console.error("Error fetching reviews:", error);
+          setReviews([]);
+        } finally {
+          setReviewsLoading(false);
+        }
+      };
+
+      fetchReviews();
+    }
+  }, [product?.id]);
+
+  // Effect to check review eligibility
+  useEffect(() => {
+    const checkReviewEligibility = async () => {
+      if (user) {
+        setCheckingReviewEligibility(true);
+        // Fetch user orders to determine if they can review this product
+        await getOrdersByUserId();
+      }
+      setCheckingReviewEligibility(false);
+    };
+
+    checkReviewEligibility();
+  }, [id, user, getOrdersByUserId]);
+
+  // Effect to update canReview based on user orders
+  // We'll run this when user changes or after orders are fetched
+  useEffect(() => {
+    if (user) {
+      // Check if user has any delivered orders that contain this product
+      const canUserReview = userOrders.some(order =>
+        order.status === "DELIVERED" &&
+        order.items.some(item => item.productId === id)
+      );
+
+      setCanReview(canUserReview);
+    } else {
+      setCanReview(false);
+    }
+  }, [user, userOrders.length, id]); // Use userOrders.length instead of the array to avoid infinite loop
 
   const handleAddToCart = () => {
     if (product) {
@@ -58,6 +133,94 @@ function ProductDetailsContent({ id }: { id: string }) {
   console.log(id, product);
 
   if (!product || isLoading) return <ProductDetailsSkeleton />;
+
+
+  // Handle review submission
+  const handleSubmitReview = async () => {
+    if (!user) {
+      toast({
+        title: "Please log in to submit a review",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!reviewTitle.trim()) {
+      toast({
+        title: "Please enter a review title",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      toast({
+        title: "Please enter a review comment",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingReview(true);
+
+    // Find a delivered order that contains this product
+    const eligibleOrder = userOrders.find(order =>
+      order.status === "DELIVERED" &&
+      order.items.some(item => item.productId === id)
+    );
+
+    if (!eligibleOrder) {
+      toast({
+        title: "You can only review products that you have purchased and received",
+        variant: "destructive",
+      });
+      setSubmittingReview(false);
+      return;
+    }
+
+    // Find the specific order item
+    const orderItem = eligibleOrder.items.find(item => item.productId === id);
+
+    if (!orderItem) {
+      toast({
+        title: "Could not find the ordered item",
+        variant: "destructive",
+      });
+      setSubmittingReview(false);
+      return;
+    }
+
+    const result = await createReview(
+      id,
+      eligibleOrder.id,
+      reviewRating,
+      reviewTitle,
+      reviewComment
+    );
+
+    if (result.success) {
+      toast({
+        title: "Review submitted successfully!",
+      });
+      setReviewTitle("");
+      setReviewComment("");
+      setReviewRating(5); // Reset rating to default
+      setReviewFormOpen(false);
+
+      // Refresh the reviews list
+      const reviewsResult = await getProductReviews(id);
+      if (reviewsResult.success && reviewsResult.reviews) {
+        setReviews(reviewsResult.reviews);
+      }
+    } else {
+      toast({
+        title: result.message || "Error submitting review",
+        variant: "destructive",
+      });
+    }
+
+    setSubmittingReview(false);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -173,7 +336,132 @@ function ProductDetailsContent({ id }: { id: string }) {
               <p className="text-gray-700 mb-4">{product.description}</p>
             </TabsContent>
             <TabsContent value="reviews" className="mt-5">
-              Reviews
+              <div className="space-y-6">
+                {/* Review form */}
+                {checkingReviewEligibility ? (
+                  <div className="mb-6 text-center">
+                    <p>Checking review eligibility...</p>
+                  </div>
+                ) : user && !reviewFormOpen && (
+                  <div className="mb-6">
+                    {canReview ? (
+                      <Button
+                        onClick={() => setReviewFormOpen(true)}
+                        variant="outline"
+                        className="mb-4"
+                      >
+                        Write a Review
+                      </Button>
+                    ) : (
+                      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-yellow-800">
+                          {user ?
+                            "You can only review this product after it has been delivered." :
+                            "Please log in to submit a review."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {reviewFormOpen && user && (
+                  <div className="bg-gray-50 p-6 rounded-lg mb-6">
+                    <h3 className="text-lg font-medium mb-4">Write Your Review</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Rating</label>
+                        <StarRating
+                          rating={reviewRating}
+                          interactive
+                          onRatingChange={setReviewRating}
+                          size={24}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Review Title</label>
+                        <input
+                          type="text"
+                          value={reviewTitle}
+                          onChange={(e) => setReviewTitle(e.target.value)}
+                          className="w-full p-2 border rounded"
+                          placeholder="Summarize your review..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Review</label>
+                        <textarea
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          className="w-full p-2 border rounded min-h-[100px]"
+                          placeholder="Share your detailed thoughts about this product..."
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleSubmitReview}
+                          disabled={submittingReview}
+                          className="bg-black text-white hover:bg-gray-800"
+                        >
+                          {submittingReview ? "Submitting..." : "Submit Review"}
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setReviewFormOpen(false);
+                            setReviewTitle("");
+                            setReviewComment("");
+                            setReviewRating(5);
+                          }}
+                          variant="outline"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Existing reviews */}
+                {reviewsLoading ? (
+                  <div className="text-center py-8">
+                    <p>Loading reviews...</p>
+                  </div>
+                ) : reviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border-b pb-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-lg">{review.title}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <StarRating rating={review.rating} readonly size={16} />
+                              <span className="text-sm text-gray-600 ml-2">
+                                {review.rating}/5
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-600">{review.user.name || review.user.email}</p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-gray-700">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p>No reviews yet for this product.</p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Be the first to review this product!
+                    </p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
             <TabsContent value="shipping">
               <p className="text-gray-700 mb-4">
