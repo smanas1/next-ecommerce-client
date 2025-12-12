@@ -110,6 +110,23 @@ function ProductDetailsContent({ id }: { id: string }) {
   }, [user, userOrders.length, id]); // Use userOrders.length instead of the array to avoid infinite loop
 
   const handleAddToCart = () => {
+    if (!user) {
+      toast({
+        title: "Please log in to add items to cart",
+        variant: "destructive",
+      });
+      router.push("/auth/login");
+      return;
+    }
+
+    if (!selectedSize) {
+      toast({
+        title: "Please select a size",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (product) {
       addToCart({
         productId: product.id,
