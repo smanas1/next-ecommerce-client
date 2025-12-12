@@ -49,7 +49,8 @@ function LoginPage() {
         title: "Login Successfull!",
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Wait briefly to ensure cookies are set before redirecting
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const user = useAuthStore.getState().user;
       if (user?.role === "SUPER_ADMIN") router.push("/super-admin");
       else router.push("/home");

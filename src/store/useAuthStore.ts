@@ -97,7 +97,10 @@ export const useAuthStore = create<AuthStore>()(
       },
       refreshAccessToken: async () => {
         try {
-          await axiosInstance.post("/refresh-token");
+          const response = await axiosInstance.post("/refresh-token");
+          if (response.data.success && response.data.user) {
+            set({ user: response.data.user });
+          }
           return true;
         } catch (e) {
           console.error(e);
