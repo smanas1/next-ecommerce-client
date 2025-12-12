@@ -1,46 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const publicRoutes = ["/", "/auth/register", "/auth/login"];
-const superAdminRoutes = ["/super-admin", "/super-admin/*"];
-const protectedRoutes = ["/home", "/account", "/cart", "/checkout", "/listing"]; // Add other protected routes as needed
+// Define public routes that don't require authentication
+const PUBLIC_ROUTES = [
+  "/",
+  "/auth/login",
+  "/auth/register"
+];
+
+// Define routes that require super admin role
+const SUPER_ADMIN_ROUTES = [
+  "/super-admin",
+  "/super-admin/*"
+];
 
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
 
-  // Check if the current route is public
-  const isPublicRoute =
-    pathname === "/" ||
-    pathname.startsWith("/auth/register") ||
-    pathname.startsWith("/auth/login");
+  // Check if current route is public
+  const isPublicRoute = isPathPublic(pathname);
 
-  // If user has access token, attempt to verify it
+  // If user has access token, verify it
   if (accessToken) {
     try {
       const { payload } = await jwtVerify(
         accessToken,
         new TextEncoder().encode(process.env.JWT_SECRET!)
       );
-      const { role } = payload as {
-        role: string;
-      };
 
-      // If authenticated user tries to access super admin routes but is not super admin
-      if (
-        role !== "SUPER_ADMIN" &&
-        (pathname.startsWith("/super-admin"))
-      ) {
+      const { role } = payload as { role: string };
+
+      // Check if authenticated user is trying to access super admin routes but doesn't have the role
+      const isAccessingSuperAdminRoute = SUPER_ADMIN_ROUTES.some(route =>
+        pathname === route || (route.endsWith('/*') && pathname.startsWith(route.slice(0, -2)))
+      );
+
+      if (role !== "SUPER_ADMIN" && isAccessingSuperAdminRoute) {
         // Non-super admin users trying to access super admin routes get redirected to home
         return NextResponse.redirect(new URL("/home", request.url));
       }
 
       // Allow authenticated users to access their authorized routes
       return NextResponse.next();
-    } catch (e) {
-      console.error("Token verification failed", e);
+    } catch (verificationError) {
+      console.error("Token verification failed:", verificationError);
 
-      // Token verification failed, try to refresh
+      // Attempt to refresh the token
       try {
         const refreshResponse = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/refresh-token`,
@@ -58,21 +64,11 @@ export async function middleware(request: NextRequest) {
           return NextResponse.next();
         } else {
           // Refresh failed, remove invalid cookies and redirect to login
-          const response = NextResponse.redirect(
-            new URL("/auth/login", request.url)
-          );
-          response.cookies.delete("accessToken");
-          response.cookies.delete("refreshToken");
-          return response;
+          return redirectToLoginWithCleanup(request);
         }
       } catch (refreshError) {
-        console.error("Token refresh failed", refreshError);
-        const response = NextResponse.redirect(
-          new URL("/auth/login", request.url)
-        );
-        response.cookies.delete("accessToken");
-        response.cookies.delete("refreshToken");
-        return response;
+        console.error("Token refresh failed:", refreshError);
+        return redirectToLoginWithCleanup(request);
       }
     }
   }
@@ -83,6 +79,26 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+/**
+ * Helper function to check if a given path is public
+ */
+function isPathPublic(pathname: string): boolean {
+  return PUBLIC_ROUTES.some(route =>
+    pathname === route ||
+    (route.endsWith('/*') && pathname.startsWith(route.slice(0, -2)))
+  );
+}
+
+/**
+ * Helper function to redirect to login and clean up invalid cookies
+ */
+function redirectToLoginWithCleanup(request: NextRequest): NextResponse {
+  const response = NextResponse.redirect(new URL("/auth/login", request.url));
+  response.cookies.delete("accessToken");
+  response.cookies.delete("refreshToken");
+  return response;
 }
 
 export const config = {
