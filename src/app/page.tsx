@@ -98,7 +98,7 @@ async function fetchBanners(): Promise<Banner[]> {
     // Try to fetch actual banners from the server API
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/get-banners`, {
       cache: 'no-store', // This ensures fresh data on each request
-      credentials: 'include' // Include authentication cookies if available
+      credentials: 'include' // Include authentication cookies
     });
 
     if (!response.ok) {
@@ -194,7 +194,7 @@ async function fetchFeaturedProducts(): Promise<Product[]> {
     // Try to fetch actual featured products from the server API
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/fetch-feature-products`, {
       cache: 'no-store', // This ensures fresh data on each request
-      credentials: 'include' // Include authentication cookies if available
+      credentials: 'include' // Include authentication cookies
     });
 
     if (!response.ok) {
