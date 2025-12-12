@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const publicRoutes = ["/auth/register", "/auth/login", "/"];
-const superAdminRoutes = ["/super-admin", "/super-admin/:path*"];
-const userRoutes = ["/home"];
+const publicRoutes = ["/", "/auth/register", "/auth/login"];
+const superAdminRoutes = ["/super-admin", "/super-admin/*"];
+const protectedRoutes = ["/home", "/account", "/cart", "/checkout", "/listing"]; // Add other protected routes as needed
 
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const { pathname } = request.nextUrl;
 
+  // Check if the current route is public
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/auth/register") ||
+    pathname.startsWith("/auth/login");
+
+  // If user has access token, attempt to verify it
   if (accessToken) {
     try {
       const { payload } = await jwtVerify(
@@ -19,34 +26,21 @@ export async function middleware(request: NextRequest) {
         role: string;
       };
 
-      if (publicRoutes.some((route) => pathname.startsWith(route))) {
-        // If user is authenticated and on a public route, redirect to appropriate dashboard
-        return NextResponse.redirect(
-          new URL(
-            role === "SUPER_ADMIN" ? "/super-admin" : "/home",
-            request.url
-          )
-        );
-      }
-
-      if (
-        role === "SUPER_ADMIN" &&
-        userRoutes.some((route) => pathname.startsWith(route))
-      ) {
-        return NextResponse.redirect(new URL("/super-admin", request.url));
-      }
+      // If authenticated user tries to access super admin routes but is not super admin
       if (
         role !== "SUPER_ADMIN" &&
-        superAdminRoutes.some((route) => pathname.startsWith(route))
+        (pathname.startsWith("/super-admin"))
       ) {
+        // Non-super admin users trying to access super admin routes get redirected to home
         return NextResponse.redirect(new URL("/home", request.url));
       }
 
+      // Allow authenticated users to access their authorized routes
       return NextResponse.next();
     } catch (e) {
       console.error("Token verification failed", e);
 
-      // Attempt to refresh the token
+      // Token verification failed, try to refresh
       try {
         const refreshResponse = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/refresh-token`,
@@ -60,11 +54,10 @@ export async function middleware(request: NextRequest) {
         );
 
         if (refreshResponse.ok) {
-          // The refresh endpoint should have set new cookies automatically
-          // Just continue with the request, cookies are now updated
+          // Token refresh successful, continue with request
           return NextResponse.next();
         } else {
-          // Refresh failed, redirect to login
+          // Refresh failed, remove invalid cookies and redirect to login
           const response = NextResponse.redirect(
             new URL("/auth/login", request.url)
           );
@@ -84,8 +77,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // If not authenticated and not on a public route, redirect to login
-  if (!publicRoutes.some((route) => pathname.startsWith(route))) {
+  // If no access token and not on a public route, redirect to login
+  if (!isPublicRoute) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
