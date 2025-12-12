@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next Ecommerce — Client
 
-## Getting Started
+A Next.js frontend for the Next Ecommerce project. Built with TypeScript and the app router. Provides UI, auth flow, and storefront pages that communicate with the backend API.
 
-First, run the development server:
+## Key Features
+- Server-side and client-side rendering with Next App Router
+- Authentication (cookies / JWT)
+- Product listing, cart, checkout flows
+- Admin / role-based pages
+- Toast notifications and global layout
 
+## Tech Stack
+- Next.js (App Router)
+- React + TypeScript
+- Prisma (backend)
+- Axios / fetch for API calls
+- Zustand / context for client state (if used)
+- Tailwind / custom CSS (project-specific)
+
+## Prerequisites
+- Node.js 18+ (LTS recommended)
+- npm or Yarn
+- Backend server running (see server/ README)
+
+## Install
+Open a terminal in the client folder and run:
+```bash
+npm install
+# or
+yarn install
+```
+
+## Environment
+Create a `.env.local` in the client root. Example variables:
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+NEXT_PUBLIC_ARCJET_KEY=your_arcjet_public_key
+NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXX
+# Do NOT store server secrets (e.g. JWT_SECRET) in client env
+```
+
+## Scripts
+- Start dev server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+- Build for production:
+```bash
+npm run build
+npm run start
+```
+- Lint:
+```bash
+npm run lint
+```
+- Test:
+```bash
+npm run test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Running with Backend
+Ensure the backend is running and CORS is configured to allow the client origin. If auth uses cookies, ensure:
+- Backend sets cookies with sameSite and secure settings appropriate for environment
+- Frontend requests include credentials (axios: withCredentials: true / fetch: credentials: 'include')
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure (high level)
+- src/app — Next app routes and layouts
+- src/components — Reusable UI components
+- src/pages or src/app — Pages (app router)
+- src/styles — Global styles
+- public — Static assets
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Troubleshooting
+- Login redirect issues: clear cookies, ensure backend sets cookies, confirm API base URL, and use router.refresh() after login if middleware depends on cookies.
+- CORS errors: verify CLIENT_URL / NEXT_PUBLIC_API_BASE_URL and credentials settings on backend.
+- Check browser DevTools Network and Console for failed requests and cookie headers.
 
-## Learn More
+## Contributing
+- Follow existing code style and run lint/tests before PR
+- Open issues with reproduction steps
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
