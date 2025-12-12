@@ -12,6 +12,9 @@ interface FeaturedProduct {
   name: string;
   price: string;
   images: string[];
+  rating?: number;
+  description?: string;
+  category?: string;
 }
 
 interface SettingsState {

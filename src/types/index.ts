@@ -13,6 +13,10 @@ export interface Review {
     name: string | null;
     email: string;
   };
+  product: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface User {
@@ -20,6 +24,7 @@ export interface User {
   name: string | null;
   email: string;
   role: "USER" | "SUPER_ADMIN";
+  createdAt: string;
 }
 
 export interface Product {

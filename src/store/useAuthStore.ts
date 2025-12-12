@@ -8,6 +8,7 @@ type User = {
   name: string | null;
   email: string;
   role: "USER" | "SUPER_ADMIN";
+  createdAt: string;
 };
 
 type AuthStore = {

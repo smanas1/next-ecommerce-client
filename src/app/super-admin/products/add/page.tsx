@@ -18,7 +18,7 @@ import { brands, categories, colors, sizes } from "@/utils/config";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState, Suspense } from "react";
 
 interface FormState {
   name: string;
@@ -30,7 +30,7 @@ interface FormState {
   stock: string;
 }
 
-function SuperAdminManageProductPage() {
+function SuperAdminManageProductInnerPage() {
   const [formState, setFormState] = useState({
     name: "",
     brand: "",
@@ -345,6 +345,14 @@ function SuperAdminManageProductPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+function SuperAdminManageProductPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuperAdminManageProductInnerPage />
+    </Suspense>
   );
 }
 
