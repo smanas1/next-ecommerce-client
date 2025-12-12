@@ -142,13 +142,54 @@ function SuperAdminCouponsPage() {
             </div>
           </div>
           <div className="grid grid-cols-4 gap-4">
-            {banners.map((banner, index) => (
+            {banners.map((banner) => (
               <div key={banner.id} className="relative group">
                 <img
                   src={banner.imageUrl}
-                  alt={`Banner ${index + 1}`}
+                  alt={`Banner ${banner.id}`}
                   className="w-full h-32 object-cover rounded-md"
                 />
+                <Button
+                  variant="destructive"
+                  size={"icon"}
+                  onClick={async () => {
+                    if (confirm("Are you sure you want to delete this banner?")) {
+                      try {
+                        const response = await fetch(
+                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/delete-banner/${banner.id}`,
+                          {
+                            method: "DELETE",
+                            credentials: "include",
+                          }
+                        );
+
+                        if (response.ok) {
+                          toast({
+                            title: "Banner deleted successfully",
+                          });
+                          fetchBanners(); // Refresh the banners list
+                        } else {
+                          const errorData = await response.json();
+                          toast({
+                            title: "Failed to delete banner",
+                            description: errorData.message || "An error occurred",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        console.error("Error deleting banner:", error);
+                        toast({
+                          title: "Failed to delete banner",
+                          description: "An error occurred while deleting the banner",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}
+                  className="absolute top-2 right-2 hidden group-hover:flex"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>

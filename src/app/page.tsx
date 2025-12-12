@@ -1,7 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { StarIcon, HeartIcon, ArrowRightIcon, SparklesIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 // Define types
 type Product = {
@@ -92,47 +95,90 @@ const mockFeaturedProducts: Product[] = [
 // Function to fetch data from the API with proper error handling
 async function fetchBanners(): Promise<Banner[]> {
   try {
-    // Since API endpoints require authentication, we'll use fallback images for public access
-    // In a production app, you would want public endpoints for the homepage
-    return [
-      {
-        id: "1",
-        imageUrl: "https://images.unsplash.com/photo-1614251056216-f748f76cd228?q=80&w=1974&auto=format&fit=crop",
-        title: "Premium Collection",
-        subtitle: "New Season Arrivals"
-      },
-      {
-        id: "2",
-        imageUrl: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?q=80&w=2070&auto=format&fit=crop",
-        title: "Summer Essentials",
-        subtitle: "Limited Time Offers"
-      },
-      {
-        id: "3",
-        imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1e57c?q=80&w=2070&auto=format&fit=crop",
-        title: "Luxury Goods",
-        subtitle: "Exclusive Designer Items"
-      }
-    ];
+    // Try to fetch actual banners from the server API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/get-banners`, {
+      cache: 'no-store', // This ensures fresh data on each request
+      credentials: 'include' // Include authentication cookies if available
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch banners:', response.status);
+      // Return fallback banners if API call fails
+      return [
+        {
+          id: "1",
+          imageUrl: "https://images.unsplash.com/photo-1603076564521-360ea6c78ada?q=80&w=2074&auto=format&fit=crop",
+          title: "Premium Collection",
+          subtitle: "New Season Arrivals"
+        },
+        {
+          id: "2",
+          imageUrl: "https://images.unsplash.com/photo-1520509454706-f3b657c4b39b?q=80&w=2070&auto=format&fit=crop",
+          title: "Summer Essentials",
+          subtitle: "Limited Time Offers"
+        },
+        {
+          id: "3",
+          imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop",
+          title: "Luxury Goods",
+          subtitle: "Exclusive Designer Items"
+        }
+      ];
+    }
+
+    const data = await response.json();
+    const banners = data.banners || [];
+
+    // If no banners are returned from the API, use fallback images
+    if (!banners || banners.length === 0) {
+      return [
+        {
+          id: "1",
+          imageUrl: "https://images.unsplash.com/photo-1603076564521-360ea6c78ada?q=80&w=2074&auto=format&fit=crop",
+          title: "Premium Collection",
+          subtitle: "New Season Arrivals"
+        },
+        {
+          id: "2",
+          imageUrl: "https://images.unsplash.com/photo-1520509454706-f3b657c4b39b?q=80&w=2070&auto=format&fit=crop",
+          title: "Summer Essentials",
+          subtitle: "Limited Time Offers"
+        },
+        {
+          id: "3",
+          imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop",
+          title: "Luxury Goods",
+          subtitle: "Exclusive Designer Items"
+        }
+      ];
+    }
+
+    // Map the API response to Banner objects
+    return banners.map((banner: any) => ({
+      id: banner.id,
+      imageUrl: banner.imageUrl,
+      title: banner.title || "Featured Collection",
+      subtitle: banner.subtitle || "New Arrivals"
+    }));
   } catch (error) {
     console.error('Error fetching banners:', error);
     // Return fallback banners if there's a network error
     return [
       {
         id: "1",
-        imageUrl: "https://images.unsplash.com/photo-1614251056216-f748f76cd228?q=80&w=1974&auto=format&fit=crop",
+        imageUrl: "https://images.unsplash.com/photo-1603076564521-360ea6c78ada?q=80&w=2074&auto=format&fit=crop",
         title: "Premium Collection",
         subtitle: "New Season Arrivals"
       },
       {
         id: "2",
-        imageUrl: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?q=80&w=2070&auto=format&fit=crop",
+        imageUrl: "https://images.unsplash.com/photo-1520509454706-f3b657c4b39b?q=80&w=2070&auto=format&fit=crop",
         title: "Summer Essentials",
         subtitle: "Limited Time Offers"
       },
       {
         id: "3",
-        imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1e57c?q=80&w=2070&auto=format&fit=crop",
+        imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop",
         title: "Luxury Goods",
         subtitle: "Exclusive Designer Items"
       }
@@ -144,7 +190,37 @@ async function fetchFeaturedProducts(): Promise<Product[]> {
   try {
     // Since API endpoints require authentication, we'll use fallback products for public access
     // In a production app, you would want public endpoints for the homepage
-    return [...mockFeaturedProducts]; // Return a copy of the mock products
+
+    // Try to fetch actual featured products from the server API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/fetch-feature-products`, {
+      cache: 'no-store', // This ensures fresh data on each request
+      credentials: 'include' // Include authentication cookies if available
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch featured products:', response.status);
+      // Return fallback products if API call fails
+      return [...mockFeaturedProducts];
+    }
+
+    const data = await response.json();
+    const featuredProducts = data.featuredProducts || [];
+
+    // If no featured products are returned from the API, use fallback products
+    if (!featuredProducts || featuredProducts.length === 0) {
+      return [...mockFeaturedProducts];
+    }
+
+    // Map the API response to Product objects
+    return featuredProducts.map((product: any) => ({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      category: product.category,
+      images: product.images || [],
+      rating: product.rating
+    }));
   } catch (error) {
     console.error('Error fetching featured products:', error);
     // Return fallback products if there's a network error
@@ -152,21 +228,92 @@ async function fetchFeaturedProducts(): Promise<Product[]> {
   }
 }
 
-async function HomePage() {
-  // Fetch data from the API
-  const [banners, featuredProducts] = await Promise.all([
-    fetchBanners(),
-    fetchFeaturedProducts()
-  ]);
+function HomePage() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [bannersData, featuredProductsData] = await Promise.all([
+          fetchBanners(),
+          fetchFeaturedProducts()
+        ]);
+
+        setBanners(bannersData);
+        setFeaturedProducts(featuredProductsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Auto-rotate banner and progress bar
+  useEffect(() => {
+    if (banners.length <= 1) return; // Don't auto-rotate if there's only one banner
+
+    // Reset progress when slide changes
+    setProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          // Move to next slide when progress completes
+          setCurrentIndex(prevIndex => (prevIndex + 1) % banners.length);
+          return 0; // Reset progress
+        }
+        return prev + 2; // Increment by 2 every 100ms to reach 100 in 5000ms
+      });
+    }, 100); // Update every 100ms
+
+    return () => clearInterval(progressInterval);
+  }, [currentIndex, banners.length]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const goToPrevious = () => {
+    const newIndex = currentIndex === 0 ? banners.length - 1 : currentIndex - 1;
+    setCurrentIndex(newIndex);
+    setProgress(0); // Reset progress when manually navigating
+  };
+
+  const goToNext = () => {
+    const newIndex = (currentIndex + 1) % banners.length;
+    setCurrentIndex(newIndex);
+    setProgress(0); // Reset progress when manually navigating
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index);
+    setProgress(0); // Reset progress when manually navigating
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero Banner Section with Modern UI */}
+      {/* Hero Banner Section with Modern Slider */}
       <section className="relative min-h-[80vh] overflow-hidden">
         {banners.map((bannerItem, index) => (
           <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === 0 ? "opacity-100" : "opacity-0"
+              index === currentIndex ? "opacity-100" : "opacity-0"
             }`}
             key={bannerItem.id}
           >
@@ -176,7 +323,7 @@ async function HomePage() {
                 alt={`Banner ${index + 1}`}
                 fill
                 className="w-full h-full object-cover object-center"
-                priority={index === 0}
+                priority={index === currentIndex}
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30" />
             </div>
@@ -227,17 +374,52 @@ async function HomePage() {
             </div>
           </div>
         ))}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === 0
-                  ? "bg-white w-8"
-                  : "bg-white/50 hover:bg-white/75"
-              }`}
-            />
-          ))}
+        {/* Slider Controls */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-10">
+          {/* Previous Button */}
+          <button
+            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-all"
+            onClick={goToPrevious}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+
+          {/* Indicators */}
+          <div className="flex space-x-2">
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? "bg-white w-8"
+                    : "bg-white/50 hover:bg-white/75"
+                }`}
+                onClick={() => goToSlide(index)}
+              />
+            ))}
+          </div>
+
+          {/* Next Button */}
+          <button
+            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-all"
+            onClick={goToNext}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Slider Progress Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-purple-400 to-pink-600"
+            style={{
+              width: `${progress}%`,
+            }}
+          ></div>
         </div>
       </section>
 

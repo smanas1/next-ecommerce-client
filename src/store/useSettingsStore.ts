@@ -60,7 +60,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       });
     } catch (e) {
       console.error(e);
-      set({ error: "Failed to fetch banners", isLoading: false });
+      set({ error: "Failed to fetch featured products", isLoading: false });
     }
   },
   addBanners: async (files: File[]) => {
@@ -85,7 +85,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       return response.data.success;
     } catch (e) {
       console.error(e);
-      set({ error: "Failed to fetch banners", isLoading: false });
+      set({ error: "Failed to add banners", isLoading: false });
+      return false;
     }
   },
   updateFeaturedProducts: async (productIds: string[]) => {
@@ -104,7 +105,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       return response.data.success;
     } catch (e) {
       console.error(e);
-      set({ error: "Failed to fetch banners", isLoading: false });
+      set({ error: "Failed to update featured products", isLoading: false });
+      return false;
     }
   },
 }));
