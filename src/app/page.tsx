@@ -365,7 +365,7 @@ async function HomePage() {
                   </div>
                   <p className="text-gray-600 text-sm mt-3 mb-4">{productItem.description.substring(0, 80)}...</p>
                   <div className="flex justify-between items-center">
-                    <Link href={`/listing/${productItem.id}`}>
+                    <Link href="/listing">
                       <Button
                         className="bg-black text-white hover:bg-gray-800 rounded-full px-4 py-2 text-sm"
                         size="sm"
@@ -438,7 +438,7 @@ async function HomePage() {
                   </div>
                   <p className="text-gray-600 text-sm mt-3 mb-4">{productItem.description.substring(0, 80)}...</p>
                   <div className="flex justify-between items-center">
-                    <Link href={`/listing/${productItem.id}`}>
+                    <Link href="/listing">
                       <Button
                         className="bg-black text-white hover:bg-gray-800 rounded-full px-4 py-2 text-sm"
                         size="sm"
