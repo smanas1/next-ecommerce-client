@@ -29,7 +29,7 @@ type AuthStore = {
 
 const axiosInstance = axios.create({
   baseURL: API_ROUTES.AUTH,
-  withCredentials: true,
+  // withCredentials is now set globally in api.ts
 });
 
 export const useAuthStore = create<AuthStore>()(

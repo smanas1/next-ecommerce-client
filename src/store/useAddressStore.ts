@@ -33,9 +33,7 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
   fetchAddresses: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${API_ROUTES.ADDRESS}/get-address`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${API_ROUTES.ADDRESS}/get-address`);
 
       set({ addresses: response.data.address, isLoading: false });
     } catch (e) {
@@ -47,10 +45,7 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
     try {
       const response = await axios.post(
         `${API_ROUTES.ADDRESS}/add-address`,
-        address,
-        {
-          withCredentials: true,
-        }
+        address
       );
 
       const newAddress = response.data.address;
@@ -70,10 +65,7 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
     try {
       const response = await axios.put(
         `${API_ROUTES.ADDRESS}/update-address/${id}`,
-        address,
-        {
-          withCredentials: true,
-        }
+        address
       );
 
       const updatedAddress = response.data.address;
@@ -93,9 +85,7 @@ export const useAddressStore = create<AddressStore>((set, get) => ({
   deleteAddress: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      await axios.delete(`${API_ROUTES.ADDRESS}/delete-address/${id}`, {
-        withCredentials: true,
-      });
+      await axios.delete(`${API_ROUTES.ADDRESS}/delete-address/${id}`);
 
       set((state) => ({
         addresses: state.addresses.filter((address) => address.id !== id),

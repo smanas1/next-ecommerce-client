@@ -56,10 +56,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(
-        `${API_ROUTES.PRODUCTS}/fetch-admin-products`,
-        {
-          withCredentials: true,
-        }
+        `${API_ROUTES.PRODUCTS}/fetch-admin-products`
       );
 
       set({ products: response.data, isLoading: false });
@@ -74,7 +71,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         `${API_ROUTES.PRODUCTS}/create-new-product`,
         productData,
         {
-          withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -93,7 +89,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         `${API_ROUTES.PRODUCTS}/${id}`,
         productData,
         {
-          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
           },
@@ -108,9 +103,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   deleteProduct: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.delete(`${API_ROUTES.PRODUCTS}/${id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.delete(`${API_ROUTES.PRODUCTS}/${id}`);
       set({ isLoading: false });
       return response.data.success;
     } catch (e) {
@@ -120,9 +113,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   getProductById: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${API_ROUTES.PRODUCTS}/${id}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`${API_ROUTES.PRODUCTS}/${id}`);
       set({ isLoading: false });
       return response.data;
     } catch (e) {
@@ -145,7 +136,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
         `${API_ROUTES.PRODUCTS}/fetch-client-products`,
         {
           params: queryParams,
-          withCredentials: true,
         }
       );
 

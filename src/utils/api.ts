@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
@@ -11,3 +13,9 @@ export const API_ROUTES = {
   ORDER: `${API_BASE_URL}/api/order`,
   REVIEWS: `${API_BASE_URL}/api/reviews`,
 };
+
+// Configure axios defaults to always include credentials
+axios.defaults.withCredentials = true;
+
+// Set a default timeout
+axios.defaults.timeout = 10000;

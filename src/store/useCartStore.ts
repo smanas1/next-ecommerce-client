@@ -31,10 +31,7 @@ export const useCartStore = create<CartStore>((set, get) => {
       try {
         await axios.put(
           `${API_ROUTES.CART}/update/${id}`,
-          { quantity },
-          {
-            withCredentials: true,
-          }
+          { quantity }
         );
       } catch (e) {
         set({ error: "Failed to update cart quantity" });
@@ -49,9 +46,7 @@ export const useCartStore = create<CartStore>((set, get) => {
     fetchCart: async () => {
       set({ isLoading: true, error: null });
       try {
-        const response = await axios.get(`${API_ROUTES.CART}/fetch-cart`, {
-          withCredentials: true,
-        });
+        const response = await axios.get(`${API_ROUTES.CART}/fetch-cart`);
 
         set({ items: response.data.data, isLoading: false });
       } catch (e) {
@@ -63,10 +58,7 @@ export const useCartStore = create<CartStore>((set, get) => {
       try {
         const response = await axios.post(
           `${API_ROUTES.CART}/add-to-cart`,
-          item,
-          {
-            withCredentials: true,
-          }
+          item
         );
 
         set((state) => ({
@@ -80,9 +72,7 @@ export const useCartStore = create<CartStore>((set, get) => {
     removeFromCart: async (id) => {
       set({ isLoading: true, error: null });
       try {
-        await axios.delete(`${API_ROUTES.CART}/remove/${id}`, {
-          withCredentials: true,
-        });
+        await axios.delete(`${API_ROUTES.CART}/remove/${id}`);
 
         set((state) => ({
           items: state.items.filter((item) => item.id !== id),
@@ -106,10 +96,7 @@ export const useCartStore = create<CartStore>((set, get) => {
       try {
         await axios.post(
           `${API_ROUTES.CART}/clear-cart`,
-          {},
-          {
-            withCredentials: true,
-          }
+          {}
         );
 
         set({ items: [], isLoading: false });
