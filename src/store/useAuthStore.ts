@@ -22,9 +22,10 @@ type AuthStore = {
   ) => Promise<string | null>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  refreshAccessToken: () => Promise<Boolean>;
+  refreshAccessToken: () => Promise<boolean>;
   updateProfile: (name: string, email: string) => Promise<boolean>;
   fetchProfile: () => Promise<boolean>;
+  initializeAuthState: () => Promise<void>;
 };
 
 const axiosInstance = axios.create({
@@ -32,11 +33,24 @@ const axiosInstance = axios.create({
   // withCredentials is now set globally in api.ts
 });
 
+// Add response interceptor to handle authentication failures
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // If we get a 401 (unauthorized) response, the token might be invalid/expired
+    if (error.response?.status === 401) {
+      // Clear the auth store to force re-authentication
+      useAuthStore.getState().logout();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
-      isLoading: false,
+      isLoading: typeof window !== 'undefined' ? true : false, // Initialize as loading if in browser
       error: null,
       register: async (name, email, password) => {
         set({ isLoading: true, error: null });
@@ -87,12 +101,14 @@ export const useAuthStore = create<AuthStore>()(
           await axiosInstance.post("/logout");
           set({ user: null, isLoading: false });
         } catch (error) {
-          set({
-            isLoading: false,
-            error: axios.isAxiosError(error)
-              ? error?.response?.data?.error || "Logout failed"
-              : "Logout failed",
-          });
+          // Even if logout API fails, clear local state
+          set({ user: null, isLoading: false });
+          console.error('Logout API error:', error);
+        } finally {
+          // Ensure all persisted state is cleared
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('auth-storage');
+          }
         }
       },
       refreshAccessToken: async () => {
@@ -154,10 +170,48 @@ export const useAuthStore = create<AuthStore>()(
           return false;
         }
       },
+      initializeAuthState: async () => {
+        set({ isLoading: true });
+        try {
+          // Check if we have user data in the persisted store
+          const hasStoredUser = get().user !== null;
+          
+          if (hasStoredUser) {
+            // Verify the stored user is still valid by fetching profile
+            const isValid = await get().fetchProfile();
+            if (!isValid) {
+              // If profile fetch failed, clear the invalid state
+              set({ user: null });
+            }
+          }
+        } catch (error) {
+          console.error("Error initializing auth state:", error);
+          set({ user: null });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
     }),
     {
       name: "auth-storage",
       partialize: (state) => ({ user: state.user }),
+      onRehydrateStorage: () => {
+        // Return a callback that runs before state is rehydrated
+        return (state, error) => {
+          if (error) {
+            console.error("An error happened during hydration", error);
+          } else if (state) {
+            // Set loading state during hydration
+            state.isLoading = true;
+          }
+        };
+      },
     }
   )
 );
+
+// Extract the hydrated state checking function
+export const useHydrated = () => {
+  const hydrated = useAuthStore.persist.hasHydrated;
+  return hydrated;
+};

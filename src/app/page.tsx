@@ -5,6 +5,7 @@ import { StarIcon, HeartIcon, ArrowRightIcon, SparklesIcon } from "lucide-react"
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useAuthSync } from "@/hooks/useAuthSync";
 
 // Define types
 type Product = {
@@ -229,16 +230,17 @@ async function fetchFeaturedProducts(): Promise<Product[]> {
 }
 
 function HomePage() {
+  const { isLoading: authLoading } = useAuthSync(); // Add auth sync
   const [banners, setBanners] = useState<Banner[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true); // Rename to be more specific
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
+        setPageLoading(true); // Use pageLoading instead of isLoading
         const [bannersData, featuredProductsData] = await Promise.all([
           fetchBanners(),
           fetchFeaturedProducts()
@@ -249,12 +251,15 @@ function HomePage() {
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setIsLoading(false);
+        setPageLoading(false); // Use pageLoading instead of isLoading
       }
     };
 
-    fetchData();
-  }, []);
+    // Only fetch data when auth loading is complete
+    if (!authLoading) {
+      fetchData();
+    }
+  }, [authLoading]); // Add authLoading to dependency array
 
   // Auto-rotate banner and progress bar
   useEffect(() => {
@@ -277,7 +282,7 @@ function HomePage() {
     return () => clearInterval(progressInterval);
   }, [currentIndex, banners.length]);
 
-  if (isLoading) {
+  if (authLoading || pageLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
         <div className="text-center">
