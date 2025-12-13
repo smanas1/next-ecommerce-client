@@ -53,6 +53,9 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Track if initialization is in progress to prevent multiple simultaneous calls
+let initializationInProgress = false;
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
@@ -186,11 +189,20 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
       initializeAuthState: async () => {
+        // Prevent multiple simultaneous initializations
+        if (initializationInProgress) {
+          // If already initializing, wait a bit and return
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return;
+        }
+
+        initializationInProgress = true;
         set({ isLoading: true });
+
         try {
           // Check if we have user data in the persisted store
           const hasStoredUser = get().user !== null;
-          
+
           if (hasStoredUser) {
             // Verify the stored user is still valid by fetching profile
             const isValid = await get().fetchProfile();
@@ -201,9 +213,22 @@ export const useAuthStore = create<AuthStore>()(
           }
         } catch (error) {
           console.error("Error initializing auth state:", error);
-          set({ user: null });
+          // Don't clear user state on network errors to prevent accidental logouts
+          if (axios.isAxiosError(error)) {
+            if (error.code === 'ERR_NETWORK' || error.code === 'ERR_INSUFFICIENT_RESOURCES') {
+              // For network errors or resource errors, keep the existing state and just finish loading
+              console.warn("Network or resource error during auth initialization, keeping existing state");
+            } else {
+              // For other axios errors (like 401), clear the user state
+              set({ user: null });
+            }
+          } else {
+            // For non-axios errors, clear the user state
+            set({ user: null });
+          }
         } finally {
           set({ isLoading: false });
+          initializationInProgress = false;
         }
       },
     }),
@@ -229,4 +254,9 @@ export const useAuthStore = create<AuthStore>()(
 export const useHydrated = () => {
   const hydrated = useAuthStore.persist.hasHydrated;
   return hydrated;
+};
+
+// Add function to manually clear initialization flag if needed
+export const clearAuthInitialization = () => {
+  initializationInProgress = false;
 };
