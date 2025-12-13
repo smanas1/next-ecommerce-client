@@ -2,17 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 // Define public routes that don't require authentication
-const PUBLIC_ROUTES = [
-  "/",
-  "/auth/login",
-  "/auth/register"
-];
+const PUBLIC_ROUTES = ["/", "/auth/login", "/auth/register"];
 
 // Define routes that require super admin role
-const SUPER_ADMIN_ROUTES = [
-  "/super-admin",
-  "/super-admin/*"
-];
+const SUPER_ADMIN_ROUTES = ["/super-admin", "/super-admin/*"];
 
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
@@ -32,8 +25,10 @@ export async function middleware(request: NextRequest) {
       const { role } = payload as { role: string };
 
       // Check if authenticated user is trying to access super admin routes but doesn't have the role
-      const isAccessingSuperAdminRoute = SUPER_ADMIN_ROUTES.some(route =>
-        pathname === route || (route.endsWith('/*') && pathname.startsWith(route.slice(0, -2)))
+      const isAccessingSuperAdminRoute = SUPER_ADMIN_ROUTES.some(
+        (route) =>
+          pathname === route ||
+          (route.endsWith("/*") && pathname.startsWith(route.slice(0, -2)))
       );
 
       if (role !== "SUPER_ADMIN" && isAccessingSuperAdminRoute) {
@@ -46,30 +41,8 @@ export async function middleware(request: NextRequest) {
     } catch (verificationError) {
       console.error("Token verification failed:", verificationError);
 
-      // Attempt to refresh the token
-      try {
-        const refreshResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/refresh-token`,
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (refreshResponse.ok) {
-          // Token refresh successful, continue with request
-          return NextResponse.next();
-        } else {
-          // Refresh failed, remove invalid cookies and redirect to login
-          return redirectToLoginWithCleanup(request);
-        }
-      } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError);
-        return redirectToLoginWithCleanup(request);
-      }
+      // Token is invalid, redirect to login and clear cookies
+      return redirectToLoginWithCleanup(request);
     }
   }
 
@@ -85,9 +58,10 @@ export async function middleware(request: NextRequest) {
  * Helper function to check if a given path is public
  */
 function isPathPublic(pathname: string): boolean {
-  return PUBLIC_ROUTES.some(route =>
-    pathname === route ||
-    (route.endsWith('/*') && pathname.startsWith(route.slice(0, -2)))
+  return PUBLIC_ROUTES.some(
+    (route) =>
+      pathname === route ||
+      (route.endsWith("/*") && pathname.startsWith(route.slice(0, -2)))
   );
 }
 
