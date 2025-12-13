@@ -37,8 +37,15 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If we get a 401 (unauthorized) response, the token might be invalid/expired
-    if (error.response?.status === 401) {
+    // Only trigger logout on 401 for auth-related endpoints
+    // This prevents logout from being triggered by non-auth API calls that fail
+    const url = error.config?.url || '';
+    const isAuthEndpoint = ['/login', '/logout', '/profile', '/refresh-token'].some(endpoint =>
+      url.includes(endpoint)
+    );
+
+    // If we get a 401 (unauthorized) response on auth-related endpoints, the token might be invalid/expired
+    if (error.response?.status === 401 && isAuthEndpoint) {
       // Clear the auth store to force re-authentication
       useAuthStore.getState().logout();
     }
@@ -82,9 +89,11 @@ export const useAuthStore = create<AuthStore>()(
             password,
           });
 
+          // Set the user in the store
           set({ isLoading: false, user: response.data.user });
 
           // Redirect to listing page after successful login
+          // Using window.location to ensure clean state transition
           if (typeof window !== 'undefined') {
             window.location.href = '/listing';
           }
