@@ -83,6 +83,12 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           set({ isLoading: false, user: response.data.user });
+
+          // Redirect to listing page after successful login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/listing';
+          }
+
           return true;
         } catch (error) {
           set({
