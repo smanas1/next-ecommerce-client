@@ -42,15 +42,16 @@ export default function LoginPage() {
           description: "Welcome back to your account!",
         });
 
-        // Wait briefly to ensure cookies are set before redirecting
-        setTimeout(() => {
-          const user = useAuthStore.getState().user;
-          if (user?.role === "SUPER_ADMIN") {
-            router.push("/super-admin");
-          } else {
-            router.push("/");
-          }
-        }, 1000);
+        // Wait briefly to ensure cookies and store state are updated before redirecting
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Get user info from store to determine redirect path
+        const user = useAuthStore.getState().user;
+        if (user?.role === "SUPER_ADMIN") {
+          router.push("/super-admin");
+        } else {
+          router.push("/");
+        }
       } else {
         toast({
           title: "Login Failed",
