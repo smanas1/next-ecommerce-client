@@ -50,7 +50,7 @@ export default function LoginPage() {
         if (user?.role === "SUPER_ADMIN") {
           router.push("/super-admin");
         } else {
-          router.push("/");
+          router.push("/listing");
         }
       } else {
         toast({

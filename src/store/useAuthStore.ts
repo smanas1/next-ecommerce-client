@@ -95,12 +95,6 @@ export const useAuthStore = create<AuthStore>()(
           // Set the user in the store
           set({ isLoading: false, user: response.data.user });
 
-          // Redirect to listing page after successful login
-          // Using window.location to ensure clean state transition
-          if (typeof window !== 'undefined') {
-            window.location.href = '/listing';
-          }
-
           return true;
         } catch (error) {
           set({
